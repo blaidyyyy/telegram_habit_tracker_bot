@@ -21,7 +21,7 @@ async def cmd_start(message : Message):
         "/add_habit + название привычки - добавить привычку\n"
         "/list_habits - список привычек\n"
         "/complete + название привычки - отметить выполнение\n"
-        "/stats - статистика"
+        
     )
 
 async def message_to_user(user_id):
