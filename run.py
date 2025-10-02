@@ -1,9 +1,7 @@
 import aiogram
 import asyncio
 import json
-#import logging
-import aioschedule as schedule
-from datetime import datetime
+
 
 from aiogram import Bot, Dispatcher
 from aiogram.filters import CommandStart, Command
@@ -21,13 +19,12 @@ async def cmd_start(message : Message):
         "/add_habit + название привычки - добавить привычку\n"
         "/list_habits - список привычек\n"
         "/complete + название привычки - отметить выполнение\n"
-        "/stats - статистика"
+        
     )
 
 async def message_to_user(user_id):
     await bot.send_message(user_id, "Не забудьте про свои привычки!")
 
-schedule.every().day.at("10:00").do(message_to_user)
 
 
 
@@ -108,7 +105,15 @@ async def complete_habit(message : Message):
             
             await message.answer("Так держать!")
             break
-            
+    if not habit_found:
+        user_habits = [habit["name"] for habit in data["users"][user_id]["habits"]]
+        habits_list = "\n".join([f"• {habit}" for habit in user_habits])
+        
+        await message.answer(f"❌ Привычка '{habit_name}' не найдена!\n\n"
+                           f"📋 Ваши привычки:\n{habits_list}\n\n"
+                           f"Проверьте написание или добавьте новую привычку с помощью /add_habit")
+
+        
 
             
     
