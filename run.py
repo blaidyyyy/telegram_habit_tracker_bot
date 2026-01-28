@@ -1,6 +1,7 @@
 import aiogram
 import asyncio
 import json
+import datetime
 
 
 from aiogram import Bot, Dispatcher
@@ -12,18 +13,27 @@ from config import TOKEN
 bot = Bot(token = TOKEN)
 dp = Dispatcher()
 
+ALL_CHATS_ID = []
+
 @dp.message(CommandStart())
 async def cmd_start(message : Message):
+
+    user_id = message.chat.id
+
+    if user_id not in ALL_CHATS_ID:
+        ALL_CHATS_ID.append(user_id)
+
     await message.answer("Привет! Я твой трекер привычек.\n\n"
         "Доступные команды:\n"
         "/add_habit + название привычки - добавить привычку\n"
         "/list_habits - список привычек\n"
         "/complete + название привычки - отметить выполнение\n"
+
+        
         
     )
 
-async def message_to_user(user_id):
-    await bot.send_message(user_id, "Не забудьте про свои привычки!")
+
 
 
 
@@ -113,16 +123,40 @@ async def complete_habit(message : Message):
                            f"📋 Ваши привычки:\n{habits_list}\n\n"
                            f"Проверьте написание или добавьте новую привычку с помощью /add_habit")
 
+async def reminder():
+    while True:
+
+        now_time = datetime.datetime.now()
+    
+        if now_time.hour == 9 and now_time.minute == 0:
+            
+            for user_id in ALL_CHATS_ID:
+                try:
+                    await bot.send_message(chat_id=user_id, text = "привычки - фундамент прогресса, не забывай про них!")
+                except:
+                    print("Ошибка в напоминалке")
+
+        await asyncio.sleep(30)
+
+    
+
         
+
+
+        
+            
 
             
     
 async def main():
+
+    asyncio.create_task(reminder())
+
     await dp.start_polling(bot)
 
 
 if __name__ == '__main__':
-    #logging.basicConfig(level = logging.INFO)
+    
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
