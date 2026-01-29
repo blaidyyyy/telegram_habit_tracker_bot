@@ -2,6 +2,7 @@ import aiogram
 import asyncio
 import json
 import datetime
+import random
 
 
 from aiogram import Bot, Dispatcher
@@ -32,9 +33,6 @@ async def cmd_start(message : Message):
         
         
     )
-
-
-
 
 
 
@@ -122,32 +120,47 @@ async def complete_habit(message : Message):
         await message.answer(f"❌ Привычка '{habit_name}' не найдена!\n\n"
                            f"📋 Ваши привычки:\n{habits_list}\n\n"
                            f"Проверьте написание или добавьте новую привычку с помощью /add_habit")
+        
+
+motivational_quotes = [
+                "Привычки - фундамент прогресса, не забывай про них! 💪",
+                "Маленькие шаги каждый день приводят к большим результатам! 🚀",
+                "Сегодняшние усилия - завтрашние победы! ✨",
+                "Не пропускай ни дня, именно так формируются сильные привычки! 🔥",
+                "Каждая отмеченная привычка - шаг к лучшей версии себя! 🌟",
+                "Последовательность - ключ к успеху в формировании привычек! 🗝️",
+                "Даже один день имеет значение! Открой приложение и отметь свои привычки! 📱",
+                "Сила воли как мышца - тренируй ее каждый день! 💫",
+                "Твой будущий я благодарит тебя за сегодняшние усилия! 🙏",
+                "Привычки формируют характер, характер определяет судьбу! ⭐"
+            ]
+        
 
 async def reminder():
     while True:
 
         now_time = datetime.datetime.now()
     
-        if now_time.hour == 9 and now_time.minute == 0:
-            
-            for user_id in ALL_CHATS_ID:
-                try:
-                    await bot.send_message(chat_id=user_id, text = "привычки - фундамент прогресса, не забывай про них!")
-                except:
-                    print("Ошибка в напоминалке")
+        if now_time.hour == 9 and now_time.minute == 00:
+            try:
+                with open('habits.json', 'r', encoding='utf-8') as file:
 
-        await asyncio.sleep(30)
+                    data = json.load(file)
 
-    
+                    users = data.get("users", {})
 
-        
+                    for user_id in users:
+                        random_quote = random.choice(motivational_quotes)
+                        await bot.send_message(chat_id=user_id, text = f"🌅 Доброе утро! 🌅\n\n{random_quote}\n")
 
+                
+                    await asyncio.sleep(60)
 
-        
-            
+                await asyncio.sleep(30)
 
-            
-    
+            except:
+                print("ищи ошибку в reminder'е")
+  
 async def main():
 
     asyncio.create_task(reminder())
