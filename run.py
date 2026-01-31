@@ -64,6 +64,10 @@ async def list_of_habits(message : Message):
 async def add_habit_command(message : Message):
     habit_name = message.text.replace('/add_habit', '').strip()
     user_id = str(message.from_user.id)
+
+    if not habit_name:
+                await message.answer("❌ Укажите название привычки!\n")
+                return
     
     try:
         with open('habits.json', 'r', encoding='utf-8') as file:
@@ -121,6 +125,46 @@ async def complete_habit(message : Message):
                            f"📋 Ваши привычки:\n{habits_list}\n\n"
                            f"Проверьте написание или добавьте новую привычку с помощью /add_habit")
         
+@dp.message(Command("delete_habit"))
+async def delete_habit(message : Message):
+    user_id = str(message.from_user.id)
+    habit_name = message.text.replace('/delete_habit', '').strip()
+
+    if not habit_name:
+                await message.answer("❌ Укажите название привычки!\n")
+                return
+
+    with open('habits.json', 'r', encoding='utf-8') as file:
+        data = json.load(file)
+
+        
+
+    habit_found = False
+    for i, habit in enumerate(data["users"][user_id]["habits"]):
+        if habit["name"].lower() == habit_name.lower():
+            
+            habit_found = True
+
+            del data["users"][user_id]["habits"][i]
+
+            with open('habits.json', 'w', encoding='utf-8') as file:
+                json.dump(data, file, indent=4, ensure_ascii=False)
+                await message.answer(f"✅ Привычка '{habit_name}' удалена!")
+                break
+    if not habit_found:
+        
+        if data["users"][user_id]["habits"]:
+            habits_list = "\n".join([f" {h['name']}" for h in data["users"][user_id]["habits"]])
+            await message.answer(
+            f"❌ Привычка '{habit_name}' не найдена!\n\n"
+            f"📋 Ваши привычки:\n{habits_list}"
+            )
+        else:
+            await message.answer(
+                f"❌ Привычка '{habit_name}' не найдена!\n"
+                f"У вас нет привычек."
+            )
+
 
 motivational_quotes = [
                 "Привычки - фундамент прогресса, не забывай про них! 💪",
@@ -139,9 +183,11 @@ motivational_quotes = [
 async def reminder():
     while True:
 
+        await asyncio.sleep(30)
+
         now_time = datetime.datetime.now()
     
-        if now_time.hour == 9 and now_time.minute == 00:
+        if now_time.hour == 20 and now_time.minute == 59:
             try:
                 with open('habits.json', 'r', encoding='utf-8') as file:
 
@@ -156,10 +202,12 @@ async def reminder():
                 
                     await asyncio.sleep(60)
 
-                await asyncio.sleep(30)
+                
 
             except:
                 print("ищи ошибку в reminder'е")
+        
+            
   
 async def main():
 
@@ -174,4 +222,5 @@ if __name__ == '__main__':
         asyncio.run(main())
     except KeyboardInterrupt:
         print("Exit")
+
         
