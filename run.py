@@ -67,13 +67,13 @@ async def list_of_habits(message : Message):
 
 
     if user_id not in data.get("users", {}):
-        await message.answer("📝 У вас пока нет привычек! Добавьте первую с помощью /add_habit")
+        await message.answer(" У вас пока нет привычек! Добавьте первую с помощью /add_habit")
         return
 
     user_habits = data["users"][user_id]["habits"]
 
     
-    habits_list = "📋 Ваши привычки:\n\n"
+    habits_list = " Ваши привычки:\n\n"
     for i, habit in enumerate(user_habits, 1):
         habits_list += f"{i}. {habit['name']} - {habit['streak']} дней подряд\n"
 
@@ -87,7 +87,7 @@ async def add_habit_command(message : Message, command : CommandObject ):
     user_id = str(message.from_user.id)
 
     if not habit_name:
-        await message.answer("❌ Укажите название привычки!\n")
+        await message.answer(" Укажите название привычки!\n")
         return
     
     data = await load_file()
@@ -137,7 +137,7 @@ async def complete_habit(message : Message, command : CommandObject ):
             habit_found = True
 
             if habit.get("last_completed") == today:
-                await message.answer(f"✅ Вы уже отмечали привычку '{habit_name}' сегодня!")
+                await message.answer(f" Вы уже отмечали привычку '{habit_name}' сегодня!")
                 return
             habit["streak"] += 1
             habit["last_completed"] = today
@@ -207,13 +207,13 @@ async def delete_habit(message : Message):
     habit_name = message.get_args()
 
     if not habit_name:
-                await message.answer("❌ Укажите название привычки!\n")
+                await message.answer(" Укажите название привычки!\n")
                 return
 
     data = await load_file()
 
     if user_id not in data.get("users", {}):
-        await message.answer("❌ У вас ещё нет привычек!")
+        await message.answer(" У вас ещё нет привычек! Используйте функцию /add_habit, чтобы создать их.")
         return
 
         
@@ -227,7 +227,7 @@ async def delete_habit(message : Message):
             del data["users"][user_id]["habits"][i]
 
             await save_file(data)
-            await message.answer(f"✅ Привычка '{habit_name}' удалена!")
+            await message.answer(f"Привычка '{habit_name}' удалена! ✅")
             break
     if not habit_found:
         
