@@ -2,11 +2,13 @@ import aiogram
 import asyncio
 import json
 import datetime
+from datetime import date
 import random
+import os
 
 
 from aiogram import Bot, Dispatcher
-from aiogram.filters import CommandStart, Command
+from aiogram.filters import CommandStart, Command, CommandObject
 from aiogram.types import Message
 
 from config import TOKEN
@@ -14,10 +16,37 @@ from config import TOKEN
 bot = Bot(token = TOKEN)
 dp = Dispatcher()
 
+DB_HABITS = "habits.json"
+
+async def load_file():
+
+    if (os.path.exists(DB_HABITS)):
+        try:
+            with open(DB_HABITS, 'r', encoding='utf-8') as file:
+                data = json.load(file)
+                return data
+        except Exception as e:
+            print(f"ошибка {e} в load_file")
+            return {"users" : {}}
+    else:
+         return {"users" : {}}   
+    
+async def save_file(data):
+    try:
+        with open(DB_HABITS, 'w', encoding='utf-8') as file:
+            json.dump(data, file, ensure_ascii=False, indent=2)
+
+    except Exception as e:
+            print(f"ошибка {e} в save_file")
+            
+                
+        
+            
+    
+
 
 @dp.message(CommandStart())
 async def cmd_start(message : Message):
-
 
     await message.answer("Привет! Я твой трекер привычек.\n\n"
         "Доступные команды:\n"
@@ -25,9 +54,7 @@ async def cmd_start(message : Message):
         "/list_habits - список привычек\n"
         "/complete + название привычки - отметить выполнение\n" \
         "/delete + назывние привычки - удалить привычку"
-
-        
-        
+  
     )
 
 
@@ -35,11 +62,9 @@ async def cmd_start(message : Message):
 @dp.message(Command("list_habits"))
 async def list_of_habits(message : Message):
     user_id = str(message.from_user.id)
-    
 
-    
-    with open('habits.json', 'r', encoding='utf-8') as file:
-        data = json.load(file)
+    data = await load_file()
+
 
     if user_id not in data.get("users", {}):
         await message.answer("📝 У вас пока нет привычек! Добавьте первую с помощью /add_habit")
@@ -57,20 +82,15 @@ async def list_of_habits(message : Message):
 
 
 @dp.message(Command("add_habit"))
-async def add_habit_command(message : Message):
-    habit_name = message.text.replace('/add_habit', '').strip()
+async def add_habit_command(message : Message, command : CommandObject ):
+    habit_name = command.args
     user_id = str(message.from_user.id)
 
     if not habit_name:
         await message.answer("❌ Укажите название привычки!\n")
         return
     
-    try:
-        with open('habits.json', 'r', encoding='utf-8') as file:
-            data = json.load(file)
-    except FileNotFoundError:
-        
-        data = {"users": {}}
+    data = await load_file()
     
     if user_id not in data["users"]:
         data["users"][user_id] = {"habits": []}
@@ -87,23 +107,21 @@ async def add_habit_command(message : Message):
     
     
 
-    with open('habits.json', 'w', encoding='utf-8') as file:
-        json.dump(data, file, ensure_ascii=False, indent=2)
+    await save_file(data)
     
     await message.answer(f"Привычка '{habit_name}' добавлена! ✅")
 
 
 @dp.message(Command("complete"))
-async def complete_habit(message : Message):
+async def complete_habit(message : Message, command : CommandObject ):
     user_id = str(message.from_user.id)
-    habit_name = message.text.replace('/complete', '').strip()
+    habit_name = command.args
 
     if not habit_name:
         await message.answer("Укажите название привычки!")
         return
     
-    with open('habits.json', 'r', encoding='utf-8') as file:
-            data = json.load(file)
+    data = await load_file()
 
     if user_id not in data.get("users", {}):
 
@@ -124,11 +142,10 @@ async def complete_habit(message : Message):
             habit["streak"] += 1
             habit["last_completed"] = today
 
-            with open('habits.json', 'w', encoding='utf-8') as file:
-                json.dump(data, file, ensure_ascii=False, indent=2)
+            await save_file(data)
             
-                await message.answer("Так держать!")
-                break
+            await message.answer("Так держать!")
+            break
     if not habit_found:
         user_habits = [habit["name"] for habit in data["users"][user_id]["habits"]]
         habits_list = "\n".join([f"• {habit}" for habit in user_habits])
@@ -146,18 +163,18 @@ async def missed_days_check():
             changes_made = False
             data = None
 
+
             if now.hour == 0 and now.minute < 1:
 
-                with open('habits.json','r', encoding='utf-8') as file:
-                    data = json.load(file)
-                today = datetime.datetime.now().date()
+                data = await load_file()
+                today = date.today().isoformat()
                 
                 for user_id, user_data in data.get("users", {}).items():
                      for habit in user_data.get("habits", []):
                         last_completed = habit.get("last_completed")
                         if last_completed:
                             try:
-                                last_date = datetime.datetime.fromisoformat(last_completed).date()
+                                last_date = date.fromisoformat(last_completed)
                                 days_missed = (today - last_date).days
 
                                 if days_missed >= 2:
@@ -175,8 +192,7 @@ async def missed_days_check():
                                 pass
             if changes_made and data is not None:
                    
-                with open('habits.json', 'w', encoding='utf-8') as file:
-                    json.dump(data, file, ensure_ascii=False, indent=2)
+                await save_file(data)
 
             
 
@@ -188,14 +204,13 @@ async def missed_days_check():
 @dp.message(Command("delete"))
 async def delete_habit(message : Message):
     user_id = str(message.from_user.id)
-    habit_name = message.text.replace('/delete', '').strip()
+    habit_name = message.get_args()
 
     if not habit_name:
                 await message.answer("❌ Укажите название привычки!\n")
                 return
 
-    with open('habits.json', 'r', encoding='utf-8') as file:
-        data = json.load(file)
+    data = await load_file()
 
     if user_id not in data.get("users", {}):
         await message.answer("❌ У вас ещё нет привычек!")
@@ -211,10 +226,9 @@ async def delete_habit(message : Message):
 
             del data["users"][user_id]["habits"][i]
 
-            with open('habits.json', 'w', encoding='utf-8') as file:
-                json.dump(data, file, indent=4, ensure_ascii=False)
-                await message.answer(f"✅ Привычка '{habit_name}' удалена!")
-                break
+            await save_file(data)
+            await message.answer(f"✅ Привычка '{habit_name}' удалена!")
+            break
     if not habit_found:
         
         if data["users"][user_id]["habits"]:
@@ -253,21 +267,17 @@ async def reminder():
     
         if now_time.hour == 9 and now_time.minute == 00:
             try:
-                with open('habits.json', 'r', encoding='utf-8') as file:
 
-                    data = json.load(file)
+                data = await load_file()
 
-                    users = data.get("users", {})
+                users = data.get("users", {})
 
-                    for user_id in users:
-                        user_id_int = int(user_id)
-                        random_quote = random.choice(motivational_quotes)
-                        await bot.send_message(chat_id=user_id_int, text = f"🌅 Доброе утро! 🌅\n\n{random_quote}\n")
+                for user_id in users:
+                    user_id_int = int(user_id)
+                    random_quote = random.choice(motivational_quotes)
+                    await bot.send_message(chat_id=user_id_int, text = f"🌅 Доброе утро! 🌅\n\n{random_quote}\n")
 
-                
-                   
-                
-
+  
             except Exception as e:
                 print(f"ищи ошибку в reminder'е: {e}")
         
