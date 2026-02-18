@@ -257,7 +257,7 @@ motivational_quotes = [
 async def reminder():
     while True:
 
-        await asyncio.sleep(30)
+        await asyncio.sleep(60)
 
         now_time = datetime.datetime.now()
     
