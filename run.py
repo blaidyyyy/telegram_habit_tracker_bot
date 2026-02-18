@@ -167,7 +167,7 @@ async def missed_days_check():
             if now.hour == 0 and now.minute < 1:
 
                 data = await load_file()
-                today = date.today().isoformat()
+                today = date.today()
                 
                 for user_id, user_data in data.get("users", {}).items():
                      for habit in user_data.get("habits", []):
@@ -186,7 +186,7 @@ async def missed_days_check():
                                         await bot.send_message(
                                             chat_id=int(user_id),
                                             text=f"⚠️ Привычка '{habit['name']}' сброшена!\n"
-                                                 f"Количество пропущенных дней {days_missed}.\n"
+                                                 f"Количество пропущенных дней: {days_missed}\n"
                                         )
                             except:
                                 pass
