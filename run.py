@@ -62,24 +62,30 @@ async def cmd_start(message : Message):
 @dp.message(Command("list_habits"))
 async def list_of_habits(message : Message):
     user_id = str(message.from_user.id)
-
     data = await load_file()
 
-
-    if user_id not in data.get("users", {}):
-        await message.answer(" У вас пока нет привычек! Добавьте первую с помощью /add_habit")
+    if user_id not in data.get("users", {}) or not data["users"][user_id]["habits"]:
+        await message.answer("У вас пока нет привычек! Добавьте первую с помощью /add_habit")
         return
 
     user_habits = data["users"][user_id]["habits"]
-
     
-    habits_list = " Ваши привычки:\n\n"
+    habits_list = "📋 Ваши привычки:\n\n"
+    
     for i, habit in enumerate(user_habits, 1):
-        habits_list += f"{i}. {habit['name']} - {habit['streak']} дней подряд\n"
+        name = habit['name']
+        streak = habit['streak']
+        lives = "".join(habit.get('system_of_lives', []))
+        lives_display = lives if lives else "💀 (жизней нет)"
+        
+        
+        habits_list += f"{i}. {name} - Стрик: {streak} \nЖизни: {lives_display}\n\n"
 
     await message.answer(habits_list)
 
 
+def get_lives_str(lives_list):
+    return "".join(lives_list)
 
 @dp.message(Command("add_habit"))
 async def add_habit_command(message : Message, command : CommandObject ):
@@ -102,14 +108,15 @@ async def add_habit_command(message : Message, command : CommandObject ):
             return
     
     
-    new_habit = {"name": habit_name, "streak": 0, "last_completed": None}
+    new_habit = {"name": habit_name, "streak": 0, "last_completed": None, "system_of_lives":["❤️","❤️","❤️"] }
     data["users"][user_id]["habits"].append(new_habit)
+    
     
     
 
     await save_file(data)
     
-    await message.answer(f"Привычка '{habit_name}' добавлена! ✅")
+    await message.answer(f"Привычка '{habit_name}' добавлена! ✅\nВаши жизни:❤️❤️❤️")
 
 
 @dp.message(Command("complete"))
@@ -164,7 +171,7 @@ async def missed_days_check():
             data = None
 
 
-            if now.hour == 0 and now.minute < 1:
+            if now.hour == 0 and now.minute > 1:
 
                 data = await load_file()
                 today = date.today()
@@ -177,19 +184,31 @@ async def missed_days_check():
                                 last_date = date.fromisoformat(last_completed)
                                 days_missed = (today - last_date).days
 
-                                if days_missed >= 2:
+                                if days_missed >= 1:
                                     
-                                    if habit.get("streak", 0) > 0:
-                                        habit["streak"] = 0
+                                    if len(habit.get("system_of_lives", [])) > 0:
+                                        habit["system_of_lives"].pop()
                                         changes_made = True
-
+                                    
+                                        
                                         await bot.send_message(
-                                            chat_id=int(user_id),
-                                            text=f"⚠️ Привычка '{habit['name']}' сброшена!\n"
-                                                 f"Количество пропущенных дней: {days_missed}\n"
+                                        chat_id=int(user_id),
+                                        text=f"⚠️ Пропуск! Привычка: {habit['name']}\nЖизни: {''.join(habit['system_of_lives'])}"
                                         )
-                            except:
-                                pass
+                            
+
+                               
+                                    if len(habit["system_of_lives"]) == 0:
+                                        habit["streak"] = 0
+                                        habit["system_of_lives"] = ["❤️", "❤️", "❤️"]
+                                        changes_made = True
+                                        await bot.send_message(chat_id=int(user_id), text=f"Вы не отмечали привычку <{habit['name']}> три дня. Стрик обнулен!💀")
+
+                            except Exception:
+                                    print("ошибка в m_d_ch")
+
+                                         
+                                
             if changes_made and data is not None:
                    
                 await save_file(data)
