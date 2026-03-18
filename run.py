@@ -93,7 +93,7 @@ async def add_habit_command(message : Message, command : CommandObject ):
     user_id = str(message.from_user.id)
 
     if not habit_name:
-        await message.answer(" Укажите название привычки!\n")
+        await message.answer("Укажите название привычки!\n")
         return
     
     data = await load_file()
@@ -104,7 +104,7 @@ async def add_habit_command(message : Message, command : CommandObject ):
     
     for habit in data["users"][user_id]["habits"]:
         if habit["name"].lower() == habit_name.lower():
-            await message.answer(f"Привычка '{habit_name}' уже существует!")
+            await message.answer(f'Привычка "{habit_name}" уже существует!')
             return
     
     
@@ -116,7 +116,7 @@ async def add_habit_command(message : Message, command : CommandObject ):
 
     await save_file(data)
     
-    await message.answer(f"Привычка '{habit_name}' добавлена! ✅\nВаши жизни:❤️❤️❤️")
+    await message.answer(f'Привычка "{habit_name}" добавлена!✅\nВаши жизни:❤️❤️❤️')
 
 
 @dp.message(Command("complete"))
@@ -144,37 +144,40 @@ async def complete_habit(message : Message, command : CommandObject ):
             habit_found = True
 
             if habit.get("last_completed") == today:
-                await message.answer(f" Вы уже отмечали привычку '{habit_name}' сегодня!")
+                await message.answer(f'Вы уже отмечали привычку "{habit_name}" сегодня!')
                 return
             habit["streak"] += 1
             habit["last_completed"] = today
 
             await save_file(data)
             
-            await message.answer("Так держать!")
+            await message.answer(f'Так держать! Стрик привычки: {habit["streak"]}🔥' )
+            
             break
     if not habit_found:
         user_habits = [habit["name"] for habit in data["users"][user_id]["habits"]]
         habits_list = "\n".join([f"• {habit}" for habit in user_habits])
         
-        await message.answer(f"❌ Привычка '{habit_name}' не найдена!\n\n"
+        await message.answer(f'❌ Привычка "{habit_name}" не найдена!\n\n'
                            f"📋 Ваши привычки:\n{habits_list}\n\n"
                            f"Проверьте написание или добавьте новую привычку с помощью /add_habit")
         
 async def missed_days_check():
+    last_check_date = None
     while True:
         try:
-            await asyncio.sleep(60)
+            await asyncio.sleep(20)
             now = datetime.datetime.now()
 
             changes_made = False
             data = None
+            today = date.today()
 
 
-            if now.hour == 0 and now.minute > 1:
+            if now.hour == 23 and now.minute == 59 and last_check_date != today:
 
                 data = await load_file()
-                today = date.today()
+                
                 
                 for user_id, user_data in data.get("users", {}).items():
                      for habit in user_data.get("habits", []):
@@ -202,16 +205,19 @@ async def missed_days_check():
                                         habit["streak"] = 0
                                         habit["system_of_lives"] = ["❤️", "❤️", "❤️"]
                                         changes_made = True
-                                        await bot.send_message(chat_id=int(user_id), text=f"Вы не отмечали привычку <{habit['name']}> три дня. Стрик обнулен!💀")
+                                        await bot.send_message(chat_id=int(user_id), text= f'Вы не отмечали привычку "{habit["name"]}" три дня. Стрик обнулен!💀')
 
                             except Exception:
                                     print("ошибка в m_d_ch")
 
+                last_check_date = today
                                          
                                 
-            if changes_made and data is not None:
+            if changes_made:
                    
                 await save_file(data)
+
+
 
             
 
@@ -226,7 +232,7 @@ async def delete_habit(message : Message,command : CommandObject ):
     habit_name = command.args
 
     if not habit_name:
-                await message.answer(" Укажите название привычки!\n")
+                await message.answer("Укажите название привычки!\n")
                 return
 
     data = await load_file()
@@ -246,19 +252,19 @@ async def delete_habit(message : Message,command : CommandObject ):
             del data["users"][user_id]["habits"][i]
 
             await save_file(data)
-            await message.answer(f"Привычка '{habit_name}' удалена! ✅")
+            await message.answer(f'Привычка "{habit_name}" удалена! ✅')
             break
     if not habit_found:
         
         if data["users"][user_id]["habits"]:
             habits_list = "\n".join([f" {h['name']}" for h in data["users"][user_id]["habits"]])
             await message.answer(
-            f"❌ Привычка '{habit_name}' не найдена!\n\n"
+            f'❌ Привычка "{habit_name}" не найдена!\n\n'
             f"📋 Ваши привычки:\n{habits_list}"
             )
         else:
             await message.answer(
-                f"❌ Привычка '{habit_name}' не найдена!\n"
+                f'❌ Привычка "{habit_name}" не найдена!\n'
                 f"У вас нет привычек."
             )
 
@@ -280,7 +286,7 @@ async def reminder():
 
         now_time = datetime.datetime.now()
     
-        if now_time.hour == 9 and now_time.minute == 00:
+        if now_time.hour == 9 and now_time.minute == 30:
             try:
 
                 data = await load_file()
@@ -290,7 +296,7 @@ async def reminder():
                 for user_id in users:
                     user_id_int = int(user_id)
                     random_quote = random.choice(motivational_quotes)
-                    await bot.send_message(chat_id=user_id_int, text = f" Доброе утро!\n\n{random_quote}\n")
+                    await bot.send_message(chat_id=user_id_int, text = f"Доброе утро!\n\n{random_quote}\n")
 
   
             except Exception as e:
